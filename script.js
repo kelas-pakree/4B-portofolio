@@ -234,7 +234,7 @@ function showView(id, btn) {
 
 // ---------- INIT ----------
 window.addEventListener("DOMContentLoaded", () => {
-  document.getElementById("logoSekolah").src = "assets/logo-mi.png";
+  document.getElementById("logoSekolah").src = "logo-mi.png";
   document.querySelector(".w-name").nextSibling; // no-op guard
   document.getElementById("judulKelas").textContent = `${CONFIG.IDENTITAS.kelas} ${CONFIG.IDENTITAS.namaSekolah}`;
   document.getElementById("lokasiSekolah").textContent = CONFIG.IDENTITAS.lokasi;
