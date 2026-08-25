@@ -31,7 +31,7 @@ header.hero{
 }
 .hero-inner{display:flex;gap:12px;align-items:center;justify-content:space-between;}
 .logo-mi{width:72px;height:72px;object-fit:contain;flex-shrink:0;}
-.brand-wordmark{font-family:'Poppins',sans-serif;font-size:40px;line-height:1;margin:0;letter-spacing:.2px;}
+.brand-wordmark{font-family:'Poppins',sans-serif;font-size:65px;line-height:1;margin:0;letter-spacing:.2px;}
 .brand-wordmark .w-kelas{color:var(--brand-orange);font-weight:600;}
 .brand-wordmark .w-name{color:var(--brand-navy);font-weight:800;}
 .hero-text h1{margin:4px 0 1px;font-size:16px;font-weight:600;color:var(--brand-navy);letter-spacing:.2px;}
