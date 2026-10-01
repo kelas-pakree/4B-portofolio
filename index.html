@@ -657,6 +657,7 @@ button { font-family: inherit; }
   display: flex;
   justify-content: center;
   background: #eef2ee;
+  touch-action: pan-x pan-y; /* blokir pinch-zoom browser di sini -> paksa pakai tombol +/- biar tetap tajam */
 }
 .pdf-canvas-scroll canvas {
   display: block;
@@ -1723,7 +1724,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (pdfDoc && pdfPageNum < pdfDoc.numPages) { pdfPageNum++; renderPdfJsPage(pdfPageNum); }
   });
   document.getElementById("pdfZoomIn").addEventListener("click", () => {
-    if (pdfDoc) { pdfZoom = Math.min(pdfZoom + 0.25, 3); renderPdfJsPage(pdfPageNum); }
+    if (pdfDoc) { pdfZoom = Math.min(pdfZoom + 0.25, 5); renderPdfJsPage(pdfPageNum); }
   });
   document.getElementById("pdfZoomOut").addEventListener("click", () => {
     if (pdfDoc) { pdfZoom = Math.max(pdfZoom - 0.25, 0.5); renderPdfJsPage(pdfPageNum); }
