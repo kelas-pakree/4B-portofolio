@@ -1017,10 +1017,10 @@ table.nilai-table td.tm-td { padding: 4px 3px; }
   </div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
 <script>
   if (window.pdfjsLib) {
-    pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+    pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js";
   }
 </script>
 <script>
@@ -1709,7 +1709,12 @@ document.addEventListener("DOMContentLoaded", () => {
     const res = await fetch(downloadUrl);
     if (!res.ok) throw new Error("gagal mengambil file");
     const buf = await res.arrayBuffer();
-    pdfDoc = await pdfjsLib.getDocument({ data: buf }).promise;
+    pdfDoc = await pdfjsLib.getDocument({
+      data: buf,
+      standardFontDataUrl: "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/standard_fonts/",
+      cMapUrl: "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/",
+      cMapPacked: true,
+    }).promise;
     pdfPageNum = 1;
     pdfZoom = 1;
     pdfLoadingNote.style.display = "none";
