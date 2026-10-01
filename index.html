@@ -526,6 +526,14 @@ button { font-family: inherit; }
   border-radius: var(--radius-s);
   margin: 6px 0 4px;
 }
+.res-pdf {
+  width: 100%;
+  height: 70vh;
+  min-height: 320px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-s);
+  margin: 6px 0 4px;
+}
 
 /* Kuis / Tugas list */
 .list-item {
@@ -1657,6 +1665,20 @@ function resIcon(type) {
   return { pdf: "📄", image: "🖼️", youtube: "▶️", link: "🔗", audio: "🎧" }[type] || "📎";
 }
 
+function driveFileId(url) {
+  if (!url) return null;
+  const m = String(url).match(/\/d\/([a-zA-Z0-9_-]{10,})/) || String(url).match(/[?&]id=([a-zA-Z0-9_-]{10,})/);
+  return m ? m[1] : null;
+}
+function drivePreviewUrl(url) {
+  const id = driveFileId(url);
+  return id ? `https://drive.google.com/file/d/${id}/preview` : url;
+}
+function driveDownloadUrl(url) {
+  const id = driveFileId(url);
+  return id ? `https://drive.google.com/uc?export=download&id=${id}` : url;
+}
+
 function renderResourceItem(item) {
   if (item.type === "image") {
     return `
@@ -1697,13 +1719,15 @@ function renderResourceItem(item) {
   }
   if (item.type === "pdf") {
     return `
-      <div class="res-item">
-        <span class="res-icon">${resIcon(item.type)}</span>
-        <span class="res-title">${item.judul}</span>
-        <span class="res-action-group">
-          <a class="res-action" href="${item.url}" target="_blank" rel="noopener">Buka</a>
-          <a class="res-action" href="${item.url}" download target="_blank" rel="noopener">Unduh</a>
-        </span>
+      <div class="res-item" style="flex-direction:column; align-items:stretch;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <span class="res-icon">${resIcon(item.type)}</span>
+          <span class="res-title">${item.judul}</span>
+        </div>
+        <iframe class="res-pdf" src="${drivePreviewUrl(item.url)}" title="${item.judul}" loading="lazy"></iframe>
+        <div style="display:flex; gap:8px;">
+          <a class="res-action" href="${driveDownloadUrl(item.url)}" download target="_blank" rel="noopener">Unduh</a>
+        </div>
       </div>
     `;
   }
