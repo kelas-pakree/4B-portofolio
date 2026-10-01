@@ -570,6 +570,44 @@ button { font-family: inherit; }
   cursor: pointer;
   z-index: 1;
 }
+.pdf-viewer-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 4px 0 8px;
+}
+.pdf-viewer-toolbar button {
+  background: var(--white);
+  border: none;
+  border-radius: 8px;
+  width: 34px; height: 34px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  cursor: pointer;
+  color: var(--green-dark, #1f5c2e);
+}
+.pdf-viewer-toolbar span {
+  color: var(--white);
+  font-size: 0.85rem;
+  min-width: 56px;
+  text-align: center;
+}
+.pdf-canvas-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  display: flex;
+  justify-content: center;
+  background: #4b4f52;
+  border-radius: var(--radius-m);
+}
+.pdf-canvas-scroll canvas {
+  display: block;
+  margin: 12px auto;
+  box-shadow: 0 2px 14px rgba(0,0,0,0.35);
+  max-width: none;
+}
 
 /* Kuis / Tugas list */
 .list-item {
@@ -896,10 +934,27 @@ table.nilai-table td.tm-td { padding: 4px 3px; }
 <div class="pdf-modal" id="pdfModal">
   <button class="pdf-modal-close" id="pdfModalClose">✕</button>
   <p id="pdfModalTitle"></p>
+  <p id="pdfLoadingNote" style="color:var(--white); font-size:0.85rem; text-align:center; margin:0 0 6px;"></p>
+  <div class="pdf-viewer-toolbar" id="pdfViewerToolbar" style="display:none;">
+    <button id="pdfPrev" type="button">‹</button>
+    <span id="pdfPageInfo">1 / 1</span>
+    <button id="pdfNext" type="button">›</button>
+    <button id="pdfZoomOut" type="button">−</button>
+    <button id="pdfZoomIn" type="button">+</button>
+  </div>
+  <div class="pdf-canvas-scroll" id="pdfCanvasScroll" style="display:none;">
+    <canvas id="pdfCanvas"></canvas>
+  </div>
   <iframe id="pdfModalFrame" src="" title="Pratinjau PDF"></iframe>
   <p style="margin-top:6px;"><a id="pdfModalOpenTab" href="#" target="_blank" rel="noopener" style="color:var(--white); text-decoration:underline; font-size:0.8rem;">Tidak tampil? Buka di tab baru</a></p>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+  if (window.pdfjsLib) {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+  }
+</script>
 <script>
 /* =========================================================================
    data.js — SUMBER DATA
@@ -1524,24 +1579,99 @@ document.addEventListener("DOMContentLoaded", () => {
   const pdfFrame = document.getElementById("pdfModalFrame");
   const pdfTitle = document.getElementById("pdfModalTitle");
   const pdfOpenTab = document.getElementById("pdfModalOpenTab");
+  const pdfLoadingNote = document.getElementById("pdfLoadingNote");
+  const pdfToolbar = document.getElementById("pdfViewerToolbar");
+  const pdfCanvasScroll = document.getElementById("pdfCanvasScroll");
+  const pdfCanvas = document.getElementById("pdfCanvas");
+  const pdfCtx = pdfCanvas.getContext("2d");
+  const pdfPageInfo = document.getElementById("pdfPageInfo");
+
+  let pdfDoc = null;
+  let pdfPageNum = 1;
+  let pdfZoom = 1;
+  let pdfRenderToken = 0;
+
+  function resetPdfViewerUI() {
+    pdfToolbar.style.display = "none";
+    pdfCanvasScroll.style.display = "none";
+    pdfFrame.style.display = "none";
+    pdfLoadingNote.textContent = "";
+    pdfDoc = null;
+    pdfPageNum = 1;
+    pdfZoom = 1;
+  }
+
+  function renderPdfJsPage(num) {
+    const myToken = ++pdfRenderToken;
+    pdfDoc.getPage(num).then((page) => {
+      if (myToken !== pdfRenderToken) return; // dibatalkan (ganti halaman/tutup)
+      const dpr = window.devicePixelRatio || 1;
+      const containerWidth = pdfCanvasScroll.clientWidth - 24;
+      const baseViewport = page.getViewport({ scale: 1 });
+      const fitScale = (containerWidth / baseViewport.width) * pdfZoom;
+      const viewport = page.getViewport({ scale: fitScale * dpr });
+      pdfCanvas.width = viewport.width;
+      pdfCanvas.height = viewport.height;
+      pdfCanvas.style.width = (viewport.width / dpr) + "px";
+      pdfCanvas.style.height = (viewport.height / dpr) + "px";
+      page.render({ canvasContext: pdfCtx, viewport });
+      pdfPageInfo.textContent = `${num} / ${pdfDoc.numPages}`;
+    });
+  }
+
+  async function openPdfJsViewer(downloadUrl) {
+    pdfLoadingNote.textContent = "Memuat PDF...";
+    if (!window.pdfjsLib) throw new Error("pdf.js tidak termuat");
+    const res = await fetch(downloadUrl);
+    if (!res.ok) throw new Error("gagal mengambil file");
+    const buf = await res.arrayBuffer();
+    pdfDoc = await pdfjsLib.getDocument({ data: buf }).promise;
+    pdfPageNum = 1;
+    pdfZoom = 1;
+    pdfLoadingNote.textContent = "";
+    pdfToolbar.style.display = "flex";
+    pdfCanvasScroll.style.display = "flex";
+    renderPdfJsPage(pdfPageNum);
+  }
+
   document.addEventListener("click", (e) => {
     const trigger = e.target.closest("[data-pdf-open]");
     if (trigger) {
       e.preventDefault();
-      pdfFrame.src = trigger.dataset.pdfSrc;
+      resetPdfViewerUI();
       pdfTitle.textContent = trigger.dataset.pdfTitle || "";
       pdfOpenTab.href = trigger.dataset.pdfView || trigger.dataset.pdfSrc;
       pdfModal.classList.add("show");
+      openPdfJsViewer(trigger.dataset.pdfDownload).catch(() => {
+        // PDF.js gagal (mis. koneksi/CORS) -> otomatis pakai Drive Penampil PDF
+        pdfLoadingNote.textContent = "";
+        pdfFrame.src = trigger.dataset.pdfSrc;
+        pdfFrame.style.display = "block";
+      });
     }
+  });
+  document.getElementById("pdfPrev").addEventListener("click", () => {
+    if (pdfDoc && pdfPageNum > 1) { pdfPageNum--; renderPdfJsPage(pdfPageNum); }
+  });
+  document.getElementById("pdfNext").addEventListener("click", () => {
+    if (pdfDoc && pdfPageNum < pdfDoc.numPages) { pdfPageNum++; renderPdfJsPage(pdfPageNum); }
+  });
+  document.getElementById("pdfZoomIn").addEventListener("click", () => {
+    if (pdfDoc) { pdfZoom = Math.min(pdfZoom + 0.25, 3); renderPdfJsPage(pdfPageNum); }
+  });
+  document.getElementById("pdfZoomOut").addEventListener("click", () => {
+    if (pdfDoc) { pdfZoom = Math.max(pdfZoom - 0.25, 0.5); renderPdfJsPage(pdfPageNum); }
   });
   document.getElementById("pdfModalClose").addEventListener("click", () => {
     pdfModal.classList.remove("show");
     pdfFrame.src = "";
+    resetPdfViewerUI();
   });
   pdfModal.addEventListener("click", (e) => {
     if (e.target === pdfModal) {
       pdfModal.classList.remove("show");
       pdfFrame.src = "";
+      resetPdfViewerUI();
     }
   });
 });
@@ -1848,10 +1978,10 @@ function driveFileId(url) {
 }
 function drivePreviewUrl(url) {
   const id = driveFileId(url);
-  // Pakai URL PDF langsung (bukan /preview bawaan Drive yang me-render ke
-  // kanvas resolusi terbatas sehingga terlihat blur) -- dengan ini, iframe
-  // memakai PDF viewer bawaan browser (vektor, tajam, bisa di-zoom mulus).
-  return id ? `https://drive.google.com/uc?export=view&id=${id}` : url;
+  // Pakai "Drive Penampil PDF" (/preview) -- ini halaman web Google biasa,
+  // jadi aman ditanam di iframe tanpa memicu pilihan aplikasi pembuka PDF
+  // di sebagian HP (yang terjadi kalau iframe diarahkan ke file PDF mentah).
+  return id ? `https://drive.google.com/file/d/${id}/preview` : url;
 }
 function driveDownloadUrl(url) {
   const id = driveFileId(url);
@@ -1902,7 +2032,7 @@ function renderResourceItem(item) {
         <span class="res-icon">${resIcon(item.type)}</span>
         <span class="res-title">${item.judul}</span>
         <span class="res-action-group">
-          <a class="res-action" href="#" data-pdf-open data-pdf-src="${drivePreviewUrl(item.url)}" data-pdf-title="${item.judul}" data-pdf-view="${item.url}">Baca</a>
+          <a class="res-action" href="#" data-pdf-open data-pdf-src="${drivePreviewUrl(item.url)}" data-pdf-download="${driveDownloadUrl(item.url)}" data-pdf-title="${item.judul}" data-pdf-view="${item.url}">Buka</a>
           <a class="res-action" href="${driveDownloadUrl(item.url)}" download target="_blank" rel="noopener">Unduh</a>
         </span>
       </div>
