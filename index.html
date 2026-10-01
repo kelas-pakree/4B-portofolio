@@ -2038,6 +2038,11 @@ function resIcon(type) {
   return { pdf: "📄", image: "🖼️", youtube: "▶️", link: "🔗", audio: "🎧" }[type] || "📎";
 }
 
+// API Key Google Drive (dibatasi hanya untuk Google Drive API) -- dipakai
+// supaya PDF.js bisa mengambil (fetch) isi file lewat Drive API v3 tanpa
+// terblokir CORS, sehingga bisa dirender tajam langsung di dalam aplikasi.
+const GOOGLE_DRIVE_API_KEY = "AIzaSyDotS4-PERYiAKmPqDCsbfARNk498Q0ZyE";
+
 function driveFileId(url) {
   if (!url) return null;
   const m = String(url).match(/\/d\/([a-zA-Z0-9_-]{10,})/) || String(url).match(/[?&]id=([a-zA-Z0-9_-]{10,})/);
@@ -2053,6 +2058,10 @@ function drivePreviewUrl(url) {
 function driveDownloadUrl(url) {
   const id = driveFileId(url);
   return id ? `https://drive.google.com/uc?export=download&id=${id}` : url;
+}
+function driveApiMediaUrl(url) {
+  const id = driveFileId(url);
+  return id ? `https://www.googleapis.com/drive/v3/files/${id}?alt=media&key=${GOOGLE_DRIVE_API_KEY}` : null;
 }
 
 function renderResourceItem(item) {
@@ -2099,7 +2108,7 @@ function renderResourceItem(item) {
         <span class="res-icon">${resIcon(item.type)}</span>
         <span class="res-title">${item.judul}</span>
         <span class="res-action-group">
-          <a class="res-action" href="#" data-pdf-open data-pdf-src="${drivePreviewUrl(item.url)}" data-pdf-download="${driveDownloadUrl(item.url)}" data-pdf-title="${item.judul}" data-pdf-view="${item.url}">Buka</a>
+          <a class="res-action" href="#" data-pdf-open data-pdf-src="${drivePreviewUrl(item.url)}" data-pdf-download="${driveApiMediaUrl(item.url)}" data-pdf-title="${item.judul}" data-pdf-view="${item.url}">Buka</a>
           <a class="res-action" href="${driveDownloadUrl(item.url)}" download target="_blank" rel="noopener">Unduh</a>
         </span>
       </div>
