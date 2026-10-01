@@ -897,6 +897,7 @@ table.nilai-table td.tm-td { padding: 4px 3px; }
   <button class="pdf-modal-close" id="pdfModalClose">✕</button>
   <p id="pdfModalTitle"></p>
   <iframe id="pdfModalFrame" src="" title="Pratinjau PDF"></iframe>
+  <p style="margin-top:6px;"><a id="pdfModalOpenTab" href="#" target="_blank" rel="noopener" style="color:var(--white); text-decoration:underline; font-size:0.8rem;">Tidak tampil? Buka di tab baru</a></p>
 </div>
 
 <script>
@@ -1522,12 +1523,14 @@ document.addEventListener("DOMContentLoaded", () => {
   const pdfModal = document.getElementById("pdfModal");
   const pdfFrame = document.getElementById("pdfModalFrame");
   const pdfTitle = document.getElementById("pdfModalTitle");
+  const pdfOpenTab = document.getElementById("pdfModalOpenTab");
   document.addEventListener("click", (e) => {
     const trigger = e.target.closest("[data-pdf-open]");
     if (trigger) {
       e.preventDefault();
       pdfFrame.src = trigger.dataset.pdfSrc;
       pdfTitle.textContent = trigger.dataset.pdfTitle || "";
+      pdfOpenTab.href = trigger.dataset.pdfView || trigger.dataset.pdfSrc;
       pdfModal.classList.add("show");
     }
   });
@@ -1845,7 +1848,10 @@ function driveFileId(url) {
 }
 function drivePreviewUrl(url) {
   const id = driveFileId(url);
-  return id ? `https://drive.google.com/file/d/${id}/preview` : url;
+  // Pakai URL PDF langsung (bukan /preview bawaan Drive yang me-render ke
+  // kanvas resolusi terbatas sehingga terlihat blur) -- dengan ini, iframe
+  // memakai PDF viewer bawaan browser (vektor, tajam, bisa di-zoom mulus).
+  return id ? `https://drive.google.com/uc?export=view&id=${id}` : url;
 }
 function driveDownloadUrl(url) {
   const id = driveFileId(url);
@@ -1896,7 +1902,7 @@ function renderResourceItem(item) {
         <span class="res-icon">${resIcon(item.type)}</span>
         <span class="res-title">${item.judul}</span>
         <span class="res-action-group">
-          <a class="res-action" href="#" data-pdf-open data-pdf-src="${drivePreviewUrl(item.url)}" data-pdf-title="${item.judul}">Baca</a>
+          <a class="res-action" href="#" data-pdf-open data-pdf-src="${drivePreviewUrl(item.url)}" data-pdf-title="${item.judul}" data-pdf-view="${item.url}">Baca</a>
           <a class="res-action" href="${driveDownloadUrl(item.url)}" download target="_blank" rel="noopener">Unduh</a>
         </span>
       </div>
