@@ -654,13 +654,13 @@ button { font-family: inherit; }
   flex: 1;
   min-height: 0;
   overflow: auto;
-  display: flex;
-  justify-content: center;
+  display: block;
+  text-align: center;
   background: #eef2ee;
   touch-action: pan-x pan-y; /* blokir pinch-zoom browser di sini -> paksa pakai tombol +/- biar tetap tajam */
 }
 .pdf-canvas-scroll canvas {
-  display: block;
+  display: inline-block;
   margin: 16px auto;
   box-shadow: 0 2px 14px rgba(0,0,0,0.18);
   background: #fff;
@@ -1667,12 +1667,21 @@ document.addEventListener("DOMContentLoaded", () => {
     pdfDoc = null;
     pdfPageNum = 1;
     pdfZoom = 1;
+    if (pdfCurrentRenderTask) { pdfCurrentRenderTask.cancel(); pdfCurrentRenderTask = null; }
     const dbg = document.getElementById("pdfModalDebug");
     if (dbg) { dbg.style.display = "none"; dbg.textContent = ""; }
   }
 
+  let pdfCurrentRenderTask = null;
+
   function renderPdfJsPage(num) {
     const myToken = ++pdfRenderToken;
+    // Batalkan render yang masih berjalan dari halaman/zoom sebelumnya,
+    // supaya tidak menimpa kanvas yang sama (penyebab teks jadi rapat/dobel).
+    if (pdfCurrentRenderTask) {
+      pdfCurrentRenderTask.cancel();
+      pdfCurrentRenderTask = null;
+    }
     pdfDoc.getPage(num).then((page) => {
       if (myToken !== pdfRenderToken) return; // dibatalkan (ganti halaman/tutup)
       const dpr = window.devicePixelRatio || 1;
@@ -1684,7 +1693,12 @@ document.addEventListener("DOMContentLoaded", () => {
       pdfCanvas.height = viewport.height;
       pdfCanvas.style.width = (viewport.width / dpr) + "px";
       pdfCanvas.style.height = (viewport.height / dpr) + "px";
-      page.render({ canvasContext: pdfCtx, viewport });
+      pdfCtx.clearRect(0, 0, pdfCanvas.width, pdfCanvas.height);
+      const task = page.render({ canvasContext: pdfCtx, viewport });
+      pdfCurrentRenderTask = task;
+      task.promise.then(() => {
+        if (pdfCurrentRenderTask === task) pdfCurrentRenderTask = null;
+      }).catch(() => { /* dibatalkan, abaikan */ });
       pdfPageInfo.textContent = `${num} / ${pdfDoc.numPages}`;
     });
   }
