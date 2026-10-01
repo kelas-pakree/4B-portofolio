@@ -1012,6 +1012,7 @@ table.nilai-table td.tm-td { padding: 4px 3px; }
     <iframe id="pdfModalFrame" src="" title="Pratinjau PDF" style="display:none;"></iframe>
     <div class="pdf-modal-foot">
       <a id="pdfModalOpenTab" href="#" target="_blank" rel="noopener">Tidak tampil? Buka di tab baru</a>
+      <p id="pdfModalDebug" style="margin:4px 0 0; font-size:0.7rem; color:#b00; display:none;"></p>
     </div>
   </div>
 </div>
@@ -1666,6 +1667,8 @@ document.addEventListener("DOMContentLoaded", () => {
     pdfDoc = null;
     pdfPageNum = 1;
     pdfZoom = 1;
+    const dbg = document.getElementById("pdfModalDebug");
+    if (dbg) { dbg.style.display = "none"; dbg.textContent = ""; }
   }
 
   function renderPdfJsPage(num) {
@@ -1709,11 +1712,17 @@ document.addEventListener("DOMContentLoaded", () => {
       pdfTitle.textContent = trigger.dataset.pdfTitle || "";
       pdfOpenTab.href = trigger.dataset.pdfView || trigger.dataset.pdfSrc;
       pdfModal.classList.add("show");
-      openPdfJsViewer(trigger.dataset.pdfDownload).catch(() => {
+      openPdfJsViewer(trigger.dataset.pdfDownload).catch((err) => {
         // PDF.js gagal (mis. koneksi/CORS) -> otomatis pakai Drive Penampil PDF
         pdfLoadingNote.style.display = "none";
         pdfFrame.src = trigger.dataset.pdfSrc;
         pdfFrame.style.display = "block";
+        const dbg = document.getElementById("pdfModalDebug");
+        if (dbg) {
+          dbg.textContent = "Mode cadangan aktif — " + (err && err.message ? err.message : String(err));
+          dbg.style.display = "block";
+        }
+        console.warn("[pdf] fallback ke Drive Penampil PDF:", err);
       });
     }
   });
