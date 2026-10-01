@@ -1684,7 +1684,10 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     pdfDoc.getPage(num).then((page) => {
       if (myToken !== pdfRenderToken) return; // dibatalkan (ganti halaman/tutup)
-      const dpr = window.devicePixelRatio || 1;
+      // Dibatasi maks 2 -- di sebagian HP (layar rapat piksel / dpr tinggi,
+      // RAM GPU terbatas) kanvas yang terlalu besar bikin browser memampatkan
+      // hasilnya sendiri, membuat teks terlihat rapat/berubah bentuk.
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
       const containerWidth = pdfCanvasScroll.clientWidth - 24;
       const baseViewport = page.getViewport({ scale: 1 });
       const fitScale = (containerWidth / baseViewport.width) * pdfZoom;
@@ -1752,7 +1755,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (pdfDoc && pdfPageNum < pdfDoc.numPages) { pdfPageNum++; renderPdfJsPage(pdfPageNum); }
   });
   document.getElementById("pdfZoomIn").addEventListener("click", () => {
-    if (pdfDoc) { pdfZoom = Math.min(pdfZoom + 0.25, 5); renderPdfJsPage(pdfPageNum); }
+    if (pdfDoc) { pdfZoom = Math.min(pdfZoom + 0.25, 3); renderPdfJsPage(pdfPageNum); }
   });
   document.getElementById("pdfZoomOut").addEventListener("click", () => {
     if (pdfDoc) { pdfZoom = Math.max(pdfZoom - 0.25, 0.5); renderPdfJsPage(pdfPageNum); }
