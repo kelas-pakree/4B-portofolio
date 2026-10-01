@@ -537,61 +537,118 @@ button { font-family: inherit; }
 .pdf-modal {
   position: fixed;
   inset: 0;
-  background: rgba(10, 20, 10, 0.92);
+  background: rgba(10, 20, 10, 0.55);
   display: none;
-  align-items: stretch;
+  align-items: center;
   justify-content: center;
   z-index: 200;
-  flex-direction: column;
   padding: 14px;
 }
 .pdf-modal.show { display: flex; }
+.pdf-modal-card {
+  width: 100%;
+  max-width: 720px;
+  height: 100%;
+  max-height: 92vh;
+  background: var(--white);
+  border-radius: var(--radius-l);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.35);
+}
+.pdf-modal-header {
+  background: linear-gradient(180deg, var(--green-deep), var(--green) 140%);
+  color: var(--white);
+  padding: 14px 50px 14px 18px;
+  position: relative;
+  flex-shrink: 0;
+}
+.pdf-modal-header p {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .pdf-modal iframe {
   flex: 1;
   width: 100%;
   border: none;
-  border-radius: var(--radius-m);
   background: #fff;
 }
-.pdf-modal p {
-  color: var(--white);
-  font-size: 0.85rem;
-  margin: 10px 0;
+.pdf-modal-foot {
+  flex-shrink: 0;
+  padding: 8px 14px;
   text-align: center;
+  border-top: 1px solid var(--line);
+}
+.pdf-modal-foot a {
+  color: var(--ink-soft);
+  font-size: 0.78rem;
+  text-decoration: underline;
 }
 .pdf-modal-close {
   position: absolute;
-  top: 18px; right: 18px;
-  width: 38px; height: 38px;
+  top: 10px; right: 10px;
+  width: 34px; height: 34px;
   border-radius: 50%;
   border: none;
-  background: var(--white);
-  font-size: 1.1rem;
+  background: rgba(255,255,255,0.2);
+  color: var(--white);
+  font-size: 1rem;
   cursor: pointer;
-  z-index: 1;
 }
+.pdf-loading {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+  gap: 10px;
+}
+.pdf-loading .spinner {
+  width: 18px; height: 18px;
+  border: 3px solid var(--line);
+  border-top-color: var(--green);
+  border-radius: 50%;
+  animation: pdf-spin 0.8s linear infinite;
+}
+@keyframes pdf-spin { to { transform: rotate(360deg); } }
 .pdf-viewer-toolbar {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 4px 0 8px;
+  gap: 6px;
+  padding: 8px 10px;
+  background: var(--green-pale);
+  border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
 }
 .pdf-viewer-toolbar button {
   background: var(--white);
-  border: none;
+  border: 1px solid var(--line);
   border-radius: 8px;
-  width: 34px; height: 34px;
-  font-size: 1.05rem;
+  width: 32px; height: 32px;
+  font-size: 1rem;
   font-weight: 700;
   cursor: pointer;
-  color: var(--green-dark, #1f5c2e);
+  color: var(--green-deep);
 }
+.pdf-viewer-toolbar button:active { background: var(--green-pale); }
 .pdf-viewer-toolbar span {
-  color: var(--white);
-  font-size: 0.85rem;
-  min-width: 56px;
+  color: var(--ink-soft);
+  font-size: 0.8rem;
+  min-width: 52px;
   text-align: center;
+}
+.pdf-viewer-toolbar .pdf-toolbar-sep {
+  width: 1px; height: 22px;
+  background: var(--line);
+  margin: 0 4px;
 }
 .pdf-canvas-scroll {
   flex: 1;
@@ -599,13 +656,13 @@ button { font-family: inherit; }
   overflow: auto;
   display: flex;
   justify-content: center;
-  background: #4b4f52;
-  border-radius: var(--radius-m);
+  background: #eef2ee;
 }
 .pdf-canvas-scroll canvas {
   display: block;
-  margin: 12px auto;
-  box-shadow: 0 2px 14px rgba(0,0,0,0.35);
+  margin: 16px auto;
+  box-shadow: 0 2px 14px rgba(0,0,0,0.18);
+  background: #fff;
   max-width: none;
 }
 
@@ -932,21 +989,30 @@ table.nilai-table td.tm-td { padding: 4px 3px; }
 </div>
 
 <div class="pdf-modal" id="pdfModal">
-  <button class="pdf-modal-close" id="pdfModalClose">✕</button>
-  <p id="pdfModalTitle"></p>
-  <p id="pdfLoadingNote" style="color:var(--white); font-size:0.85rem; text-align:center; margin:0 0 6px;"></p>
-  <div class="pdf-viewer-toolbar" id="pdfViewerToolbar" style="display:none;">
-    <button id="pdfPrev" type="button">‹</button>
-    <span id="pdfPageInfo">1 / 1</span>
-    <button id="pdfNext" type="button">›</button>
-    <button id="pdfZoomOut" type="button">−</button>
-    <button id="pdfZoomIn" type="button">+</button>
+  <div class="pdf-modal-card">
+    <div class="pdf-modal-header">
+      <p id="pdfModalTitle"></p>
+      <button class="pdf-modal-close" id="pdfModalClose">✕</button>
+    </div>
+    <div class="pdf-loading" id="pdfLoadingNote" style="display:none;">
+      <span class="spinner"></span> Memuat PDF...
+    </div>
+    <div class="pdf-viewer-toolbar" id="pdfViewerToolbar" style="display:none;">
+      <button id="pdfPrev" type="button" aria-label="Halaman sebelumnya">‹</button>
+      <span id="pdfPageInfo">1 / 1</span>
+      <button id="pdfNext" type="button" aria-label="Halaman berikutnya">›</button>
+      <span class="pdf-toolbar-sep"></span>
+      <button id="pdfZoomOut" type="button" aria-label="Perkecil">−</button>
+      <button id="pdfZoomIn" type="button" aria-label="Perbesar">+</button>
+    </div>
+    <div class="pdf-canvas-scroll" id="pdfCanvasScroll" style="display:none;">
+      <canvas id="pdfCanvas"></canvas>
+    </div>
+    <iframe id="pdfModalFrame" src="" title="Pratinjau PDF" style="display:none;"></iframe>
+    <div class="pdf-modal-foot">
+      <a id="pdfModalOpenTab" href="#" target="_blank" rel="noopener">Tidak tampil? Buka di tab baru</a>
+    </div>
   </div>
-  <div class="pdf-canvas-scroll" id="pdfCanvasScroll" style="display:none;">
-    <canvas id="pdfCanvas"></canvas>
-  </div>
-  <iframe id="pdfModalFrame" src="" title="Pratinjau PDF"></iframe>
-  <p style="margin-top:6px;"><a id="pdfModalOpenTab" href="#" target="_blank" rel="noopener" style="color:var(--white); text-decoration:underline; font-size:0.8rem;">Tidak tampil? Buka di tab baru</a></p>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -1595,7 +1661,7 @@ document.addEventListener("DOMContentLoaded", () => {
     pdfToolbar.style.display = "none";
     pdfCanvasScroll.style.display = "none";
     pdfFrame.style.display = "none";
-    pdfLoadingNote.textContent = "";
+    pdfLoadingNote.style.display = "none";
     pdfDoc = null;
     pdfPageNum = 1;
     pdfZoom = 1;
@@ -1620,7 +1686,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function openPdfJsViewer(downloadUrl) {
-    pdfLoadingNote.textContent = "Memuat PDF...";
+    pdfLoadingNote.style.display = "flex";
     if (!window.pdfjsLib) throw new Error("pdf.js tidak termuat");
     const res = await fetch(downloadUrl);
     if (!res.ok) throw new Error("gagal mengambil file");
@@ -1628,7 +1694,7 @@ document.addEventListener("DOMContentLoaded", () => {
     pdfDoc = await pdfjsLib.getDocument({ data: buf }).promise;
     pdfPageNum = 1;
     pdfZoom = 1;
-    pdfLoadingNote.textContent = "";
+    pdfLoadingNote.style.display = "none";
     pdfToolbar.style.display = "flex";
     pdfCanvasScroll.style.display = "flex";
     renderPdfJsPage(pdfPageNum);
@@ -1644,7 +1710,7 @@ document.addEventListener("DOMContentLoaded", () => {
       pdfModal.classList.add("show");
       openPdfJsViewer(trigger.dataset.pdfDownload).catch(() => {
         // PDF.js gagal (mis. koneksi/CORS) -> otomatis pakai Drive Penampil PDF
-        pdfLoadingNote.textContent = "";
+        pdfLoadingNote.style.display = "none";
         pdfFrame.src = trigger.dataset.pdfSrc;
         pdfFrame.style.display = "block";
       });
