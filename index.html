@@ -1687,15 +1687,20 @@ document.addEventListener("DOMContentLoaded", () => {
       // Dibatasi maks 2 -- di sebagian HP (layar rapat piksel / dpr tinggi,
       // RAM GPU terbatas) kanvas yang terlalu besar bikin browser memampatkan
       // hasilnya sendiri, membuat teks terlihat rapat/berubah bentuk.
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
       const containerWidth = pdfCanvasScroll.clientWidth - 24;
       const baseViewport = page.getViewport({ scale: 1 });
       const fitScale = (containerWidth / baseViewport.width) * pdfZoom;
+      // Pakai kerapatan piksel asli layar HP (maks 3) supaya tajam, tapi
+      // batasi total piksel kanvas (~12 juta) agar aman di RAM HP.
+      let dpr = Math.min(window.devicePixelRatio || 1, 3);
+      const MAX_PIXELS = 12e6;
+      const pixels = baseViewport.width * baseViewport.height * Math.pow(fitScale * dpr, 2);
+      if (pixels > MAX_PIXELS) dpr = dpr * Math.sqrt(MAX_PIXELS / pixels);
       const viewport = page.getViewport({ scale: fitScale * dpr });
       pdfCanvas.width = viewport.width;
       pdfCanvas.height = viewport.height;
-      pdfCanvas.style.width = (viewport.width / dpr) + "px";
-      pdfCanvas.style.height = (viewport.height / dpr) + "px";
+      pdfCanvas.style.width = (baseViewport.width * fitScale) + "px";
+      pdfCanvas.style.height = (baseViewport.height * fitScale) + "px";
       pdfCtx.clearRect(0, 0, pdfCanvas.width, pdfCanvas.height);
       const task = page.render({ canvasContext: pdfCtx, viewport });
       pdfCurrentRenderTask = task;
@@ -1717,6 +1722,13 @@ document.addEventListener("DOMContentLoaded", () => {
       standardFontDataUrl: "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/standard_fonts/",
       cMapUrl: "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/",
       cMapPacked: true,
+      // Gambar huruf langsung dari data font di dalam PDF (bukan lewat
+      // FontFace browser). Di banyak browser HP, FontFace dari blob gagal
+      // dimuat / diganti font sistem -> huruf jadi beda & rapat. Dengan ini
+      // bentuk huruf selalu sama persis dengan dokumen asli.
+      disableFontFace: true,
+      useSystemFonts: false,
+      isEvalSupported: false,
     }).promise;
     pdfPageNum = 1;
     pdfZoom = 1;
