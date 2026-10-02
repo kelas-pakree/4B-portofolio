@@ -723,9 +723,10 @@ button { font-family: inherit; }
 .pdf-modal.pdf-landscape.pdf-dark .pdf-toolbar-rotate-on { background: #3b4a40 !important; }
 .pdf-modal.pdf-landscape.pdf-dark .pdf-canvas-scroll { background: #000; }
 .pdf-modal.pdf-landscape.pdf-dark .pdf-canvas-scroll canvas {
-  /* Balik penuh: latar hitam pekat, teks putih. hue-rotate menjaga warna
-     gambar/tabel agar tidak terbalik. */
-  filter: invert(1) hue-rotate(180deg);
+  /* Balik penuh: latar tetap hitam pekat. hue-rotate menjaga warna gambar/tabel.
+     brightness menurunkan putih teks (~#D1D1D1) agar tidak menyilaukan;
+     hitam tetap hitam. Naikkan angkanya (maks 1) kalau ingin lebih terang. */
+  filter: invert(1) hue-rotate(180deg) brightness(0.82);
   box-shadow: none;
   background: #fff;
 }
