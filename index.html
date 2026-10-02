@@ -22,6 +22,7 @@
   --green-pale:   #EAF6E9;   /* hijau sangat muda, untuk latar lembut */
   --title-orange: #FE6801;   /* warna kata "Kelas" pada judul */
   --title-navy:   #002351;   /* warna kata "Pakree" pada judul */
+  --mapel-blue:   #1D4ED8;   /* warna nama mapel pada Jadwal Pelajaran */
   --gold:         #F2B705;   /* emas bintang & buku */
   --gold-deep:    #C98F00;
   --white:        #FFFFFF;
@@ -325,11 +326,13 @@ button { font-family: inherit; }
   font-variant-numeric: tabular-nums;
   font-size: 0.78rem;
 }
-.timeline-label { font-weight: 600; }
+.timeline-label { font-weight: 600; color: var(--mapel-blue); }
+.timeline-label.is-break { font-weight: 800; font-style: italic; }
 
 .piket-names {
-  font-size: 0.85rem;
-  color: var(--ink-soft);
+  font-size: 0.85rem;   /* sama dengan .timeline-item / .timeline-label */
+  font-weight: 600;
+  color: var(--ink);    /* warna teks utama, sama seperti label jadwal semula */
   margin: 0;
 }
 
@@ -343,7 +346,7 @@ button { font-family: inherit; }
 }
 .mapel-card {
   background: var(--green-pale);
-  border: 1px solid var(--line);
+  border: 1px solid #7DBB77;   /* bingkai tipis hijau senada, tegas di atas latar */
   border-radius: var(--radius-m);
   padding: 16px 10px;
   text-align: center;
@@ -2176,7 +2179,7 @@ function renderBeranda() {
       ${day.jam.map(j => `
         <div class="timeline-item">
           <span class="timeline-time">${j.waktu}</span>
-          <span class="timeline-label">${j.mapel}</span>
+          <span class="timeline-label${String(j.mapel).trim().toLowerCase() === "istirahat" ? " is-break" : ""}">${j.mapel}</span>
         </div>
       `).join("")}
     </div>
