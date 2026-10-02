@@ -1798,6 +1798,12 @@ document.addEventListener("DOMContentLoaded", () => {
     return bounds;
   }
 
+  // Halaman baru selalu dibuka dari posisi paling atas (dan paling kiri).
+  function scrollPdfToTop() {
+    pdfCanvasScroll.scrollTop = 0;
+    pdfCanvasScroll.scrollLeft = 0;
+  }
+
   function renderPdfJsPage(num) {
     const myToken = ++pdfRenderToken;
     // Batalkan render yang masih berjalan dari halaman/zoom sebelumnya,
@@ -1875,6 +1881,7 @@ document.addEventListener("DOMContentLoaded", () => {
     pdfLoadingNote.style.display = "none";
     pdfToolbar.style.display = "flex";
     pdfCanvasScroll.style.display = "flex";
+    scrollPdfToTop();
     renderPdfJsPage(pdfPageNum);
   }
 
@@ -1902,10 +1909,10 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
   document.getElementById("pdfPrev").addEventListener("click", () => {
-    if (pdfDoc && pdfPageNum > 1) { pdfPageNum--; renderPdfJsPage(pdfPageNum); }
+    if (pdfDoc && pdfPageNum > 1) { pdfPageNum--; scrollPdfToTop(); renderPdfJsPage(pdfPageNum); }
   });
   document.getElementById("pdfNext").addEventListener("click", () => {
-    if (pdfDoc && pdfPageNum < pdfDoc.numPages) { pdfPageNum++; renderPdfJsPage(pdfPageNum); }
+    if (pdfDoc && pdfPageNum < pdfDoc.numPages) { pdfPageNum++; scrollPdfToTop(); renderPdfJsPage(pdfPageNum); }
   });
   document.getElementById("pdfZoomIn").addEventListener("click", () => {
     if (pdfDoc) { pdfZoom = Math.min(pdfZoom + 0.25, 3); renderPdfJsPage(pdfPageNum); }
