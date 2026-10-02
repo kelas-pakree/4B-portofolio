@@ -1718,6 +1718,7 @@ document.addEventListener("DOMContentLoaded", () => {
     pdfFrame.style.display = "none";
     pdfLoadingNote.style.display = "none";
     pdfDoc = null;
+    pdfBoundsCache = new Map();
     pdfPageNum = 1;
     pdfZoom = 1;
     if (pdfCurrentRenderTask) { pdfCurrentRenderTask.cancel(); pdfCurrentRenderTask = null; }
@@ -1727,6 +1728,44 @@ document.addEventListener("DOMContentLoaded", () => {
 
   let pdfCurrentRenderTask = null;
 
+  // Batas kiri-kanan isi halaman (teks/gambar), dalam satuan lebar halaman.
+  // Dipakai mode landscape untuk membuang margin putih kiri-kanan. Hasil
+  // dicache per halaman supaya pindah halaman/zoom tidak menghitung ulang.
+  let pdfBoundsCache = new Map();
+  async function getPdfContentBounds(page, num, baseW) {
+    if (pdfBoundsCache.has(num)) return pdfBoundsCache.get(num);
+    let bounds = { left: 0, right: baseW }; // cadangan: seluruh lebar halaman
+    try {
+      const scale = 500 / baseW; // render kecil saja, cukup untuk deteksi tepi
+      const vp = page.getViewport({ scale });
+      const c = document.createElement("canvas");
+      c.width = Math.max(1, Math.round(vp.width));
+      c.height = Math.max(1, Math.round(vp.height));
+      const ctx = c.getContext("2d", { willReadFrequently: true });
+      ctx.fillStyle = "#fff";
+      ctx.fillRect(0, 0, c.width, c.height);
+      await page.render({ canvasContext: ctx, viewport: vp }).promise;
+      const { data, width, height } = ctx.getImageData(0, 0, c.width, c.height);
+      const colInk = new Uint16Array(width);
+      for (let y = 0; y < height; y++) {
+        let i = y * width * 4;
+        for (let x = 0; x < width; x++, i += 4) {
+          if (data[i] < 200 || data[i + 1] < 200 || data[i + 2] < 200) colInk[x]++;
+        }
+      }
+      // Kolom dianggap berisi kalau ada >= 2 piksel gelap (abaikan bintik).
+      let minX = -1, maxX = -1;
+      for (let x = 0; x < width; x++) {
+        if (colInk[x] >= 2) { if (minX < 0) minX = x; maxX = x; }
+      }
+      if (minX >= 0 && maxX > minX) {
+        bounds = { left: (minX / width) * baseW, right: ((maxX + 1) / width) * baseW };
+      }
+    } catch (e) { /* gagal deteksi -> pakai seluruh lebar halaman */ }
+    pdfBoundsCache.set(num, bounds);
+    return bounds;
+  }
+
   function renderPdfJsPage(num) {
     const myToken = ++pdfRenderToken;
     // Batalkan render yang masih berjalan dari halaman/zoom sebelumnya,
@@ -1735,26 +1774,41 @@ document.addEventListener("DOMContentLoaded", () => {
       pdfCurrentRenderTask.cancel();
       pdfCurrentRenderTask = null;
     }
-    pdfDoc.getPage(num).then((page) => {
+    pdfDoc.getPage(num).then(async (page) => {
       if (myToken !== pdfRenderToken) return; // dibatalkan (ganti halaman/tutup)
-      // Dibatasi maks 2 -- di sebagian HP (layar rapat piksel / dpr tinggi,
-      // RAM GPU terbatas) kanvas yang terlalu besar bikin browser memampatkan
-      // hasilnya sendiri, membuat teks terlihat rapat/berubah bentuk.
-      const sidePad = (window.innerWidth <= 640 || window.innerHeight <= 520 || pdfModal.classList.contains("pdf-landscape")) ? 8 : 24; // HP: hampir selebar layar
+      const landscape = pdfModal.classList.contains("pdf-landscape");
+      const compact = landscape || window.innerWidth <= 640 || window.innerHeight <= 520;
+      const sidePad = landscape ? 6 : (compact ? 8 : 24); // HP: hampir selebar layar
       const containerWidth = pdfCanvasScroll.clientWidth - sidePad;
       const baseViewport = page.getViewport({ scale: 1 });
-      const fitScale = (containerWidth / baseViewport.width) * pdfZoom;
+      const baseW = baseViewport.width;
+      const baseH = baseViewport.height;
+
+      // Mode landscape: potong margin putih kiri-kanan, sehingga tepi teks
+      // pas di tepi bingkai pada zoom 1x -> huruf jadi lebih besar.
+      let cropL = 0, cropW = baseW;
+      if (landscape) {
+        const b = await getPdfContentBounds(page, num, baseW);
+        if (myToken !== pdfRenderToken) return;
+        const PAD = 3; // sedikit ruang (satuan poin PDF) agar huruf tepi tidak terpotong
+        cropL = Math.max(0, b.left - PAD);
+        const cropR = Math.min(baseW, b.right + PAD);
+        cropW = Math.max(40, cropR - cropL);
+      }
+
+      const fitScale = (containerWidth / cropW) * pdfZoom;
       // Pakai kerapatan piksel asli layar HP (maks 3) supaya tajam, tapi
       // batasi total piksel kanvas (~12 juta) agar aman di RAM HP.
       let dpr = Math.min(window.devicePixelRatio || 1, 3);
       const MAX_PIXELS = 12e6;
-      const pixels = baseViewport.width * baseViewport.height * Math.pow(fitScale * dpr, 2);
+      const pixels = cropW * baseH * Math.pow(fitScale * dpr, 2);
       if (pixels > MAX_PIXELS) dpr = dpr * Math.sqrt(MAX_PIXELS / pixels);
-      const viewport = page.getViewport({ scale: fitScale * dpr });
-      pdfCanvas.width = viewport.width;
-      pdfCanvas.height = viewport.height;
-      pdfCanvas.style.width = (baseViewport.width * fitScale) + "px";
-      pdfCanvas.style.height = (baseViewport.height * fitScale) + "px";
+      const renderScale = fitScale * dpr;
+      const viewport = page.getViewport({ scale: renderScale, offsetX: -cropL * renderScale });
+      pdfCanvas.width = Math.max(1, Math.round(cropW * renderScale));
+      pdfCanvas.height = Math.max(1, Math.round(baseH * renderScale));
+      pdfCanvas.style.width = (cropW * fitScale) + "px";
+      pdfCanvas.style.height = (baseH * fitScale) + "px";
       pdfCtx.clearRect(0, 0, pdfCanvas.width, pdfCanvas.height);
       const task = page.render({ canvasContext: pdfCtx, viewport });
       pdfCurrentRenderTask = task;
