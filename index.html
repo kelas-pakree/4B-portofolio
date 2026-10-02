@@ -669,7 +669,7 @@ button { font-family: inherit; }
 
 /* Penampil PDF di HP: layar penuh tanpa bingkai, header/toolbar/footer
    dipadatkan supaya ruang baca selebar mungkin. Laptop tidak berubah. */
-@media (max-width: 640px) {
+@media (max-width: 640px), (max-height: 520px) {
   .pdf-modal { padding: 0; align-items: stretch; }
   .pdf-modal-card {
     max-width: none;
@@ -697,6 +697,25 @@ button { font-family: inherit; }
     padding-bottom: calc(4px + env(safe-area-inset-bottom, 0px));
   }
   .pdf-modal-foot a { font-size: 0.72rem; }
+}
+/* Mode landscape: kalau layar masih tegak (portrait), kartu diputar 90 derajat
+   supaya halaman PDF terbaca melebar ke samping. Kalau HP sudah diputar
+   sungguhan (layar landscape), tidak perlu diputar lagi. */
+.pdf-toolbar-rotate-on { background: var(--green-pale) !important; }
+@media (orientation: portrait) {
+  .pdf-modal.pdf-landscape .pdf-modal-card {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100vh; width: 100dvh;
+    height: 100vw; height: 100dvw;
+    max-width: none; max-height: none;
+    border-radius: 0;
+    transform-origin: top left;
+    transform: translateX(100vw) rotate(90deg);
+  }
+  .pdf-modal.pdf-landscape .pdf-modal-header { padding: 8px 46px 8px 12px; }
+  .pdf-modal.pdf-landscape .pdf-modal-close { top: 5px; right: 8px; }
+  .pdf-modal.pdf-landscape .pdf-modal-foot { padding: 4px 10px; }
 }
 
 /* Kuis / Tugas list */
@@ -1037,6 +1056,8 @@ table.nilai-table td.tm-td { padding: 4px 3px; }
       <span class="pdf-toolbar-sep"></span>
       <button id="pdfZoomOut" type="button" aria-label="Perkecil">−</button>
       <button id="pdfZoomIn" type="button" aria-label="Perbesar">+</button>
+      <span class="pdf-toolbar-sep"></span>
+      <button id="pdfRotate" type="button" aria-label="Putar ke landscape" aria-pressed="false" title="Portrait / Landscape">↻</button>
     </div>
     <div class="pdf-canvas-scroll" id="pdfCanvasScroll" style="display:none;">
       <canvas id="pdfCanvas"></canvas>
@@ -1719,7 +1740,7 @@ document.addEventListener("DOMContentLoaded", () => {
       // Dibatasi maks 2 -- di sebagian HP (layar rapat piksel / dpr tinggi,
       // RAM GPU terbatas) kanvas yang terlalu besar bikin browser memampatkan
       // hasilnya sendiri, membuat teks terlihat rapat/berubah bentuk.
-      const sidePad = window.innerWidth <= 640 ? 8 : 24; // HP: hampir selebar layar
+      const sidePad = (window.innerWidth <= 640 || window.innerHeight <= 520 || pdfModal.classList.contains("pdf-landscape")) ? 8 : 24; // HP: hampir selebar layar
       const containerWidth = pdfCanvasScroll.clientWidth - sidePad;
       const baseViewport = page.getViewport({ scale: 1 });
       const fitScale = (containerWidth / baseViewport.width) * pdfZoom;
@@ -1782,6 +1803,7 @@ document.addEventListener("DOMContentLoaded", () => {
       openPdfJsViewer(trigger.dataset.pdfDownload).catch((err) => {
         // PDF.js gagal (mis. koneksi/CORS) -> otomatis pakai Drive Penampil PDF
         pdfLoadingNote.style.display = "none";
+        setPdfLandscape(false);
         pdfFrame.src = trigger.dataset.pdfSrc;
         pdfFrame.style.display = "block";
         const dbg = document.getElementById("pdfModalDebug");
@@ -1805,6 +1827,24 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("pdfZoomOut").addEventListener("click", () => {
     if (pdfDoc) { pdfZoom = Math.max(pdfZoom - 0.25, 0.5); renderPdfJsPage(pdfPageNum); }
   });
+  const pdfRotateBtn = document.getElementById("pdfRotate");
+  function setPdfLandscape(on) {
+    pdfModal.classList.toggle("pdf-landscape", on);
+    pdfRotateBtn.classList.toggle("pdf-toolbar-rotate-on", on);
+    pdfRotateBtn.setAttribute("aria-pressed", on ? "true" : "false");
+    pdfRotateBtn.setAttribute("aria-label", on ? "Kembali ke portrait" : "Putar ke landscape");
+  }
+  pdfRotateBtn.addEventListener("click", () => {
+    setPdfLandscape(!pdfModal.classList.contains("pdf-landscape"));
+    if (pdfDoc) {
+      pdfZoom = 1; // pas-kan ulang ke lebar baru
+      requestAnimationFrame(() => renderPdfJsPage(pdfPageNum));
+    }
+  });
+  // Layar diputar / ukuran berubah -> render ulang supaya tetap tajam & pas.
+  window.addEventListener("resize", debounce(() => {
+    if (pdfDoc && pdfModal.classList.contains("show")) renderPdfJsPage(pdfPageNum);
+  }, 200));
   document.getElementById("pdfModalClose").addEventListener("click", () => {
     pdfModal.classList.remove("show");
     pdfFrame.src = "";
