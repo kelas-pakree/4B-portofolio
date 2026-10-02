@@ -667,6 +667,38 @@ button { font-family: inherit; }
   max-width: none;
 }
 
+/* Penampil PDF di HP: layar penuh tanpa bingkai, header/toolbar/footer
+   dipadatkan supaya ruang baca selebar mungkin. Laptop tidak berubah. */
+@media (max-width: 640px) {
+  .pdf-modal { padding: 0; align-items: stretch; }
+  .pdf-modal-card {
+    max-width: none;
+    height: 100vh;
+    height: 100dvh;
+    max-height: none;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .pdf-modal-header {
+    padding: 8px 46px 8px 12px;
+    padding-top: calc(8px + env(safe-area-inset-top, 0px));
+  }
+  .pdf-modal-header p { font-size: 0.88rem; }
+  .pdf-modal-close {
+    top: calc(5px + env(safe-area-inset-top, 0px));
+    right: 8px;
+    width: 32px; height: 32px;
+  }
+  .pdf-viewer-toolbar { padding: 4px 8px; }
+  .pdf-viewer-toolbar button { width: 30px; height: 30px; }
+  .pdf-canvas-scroll canvas { margin: 6px auto; box-shadow: none; }
+  .pdf-modal-foot {
+    padding: 4px 10px;
+    padding-bottom: calc(4px + env(safe-area-inset-bottom, 0px));
+  }
+  .pdf-modal-foot a { font-size: 0.72rem; }
+}
+
 /* Kuis / Tugas list */
 .list-item {
   border: 1px solid var(--line);
@@ -1687,7 +1719,8 @@ document.addEventListener("DOMContentLoaded", () => {
       // Dibatasi maks 2 -- di sebagian HP (layar rapat piksel / dpr tinggi,
       // RAM GPU terbatas) kanvas yang terlalu besar bikin browser memampatkan
       // hasilnya sendiri, membuat teks terlihat rapat/berubah bentuk.
-      const containerWidth = pdfCanvasScroll.clientWidth - 24;
+      const sidePad = window.innerWidth <= 640 ? 8 : 24; // HP: hampir selebar layar
+      const containerWidth = pdfCanvasScroll.clientWidth - sidePad;
       const baseViewport = page.getViewport({ scale: 1 });
       const fitScale = (containerWidth / baseViewport.width) * pdfZoom;
       // Pakai kerapatan piksel asli layar HP (maks 3) supaya tajam, tapi
