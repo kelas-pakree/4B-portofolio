@@ -702,6 +702,28 @@ button { font-family: inherit; }
    supaya halaman PDF terbaca melebar ke samping. Kalau HP sudah diputar
    sungguhan (layar landscape), tidak perlu diputar lagi. */
 .pdf-toolbar-rotate-on { background: var(--green-pale) !important; }
+/* Mode baca gelap-terang: hanya untuk mode landscape. */
+.pdf-modal:not(.pdf-landscape) #pdfTheme { display: none; }
+.pdf-modal.pdf-landscape.pdf-dark .pdf-modal-card { background: #14181a; }
+.pdf-modal.pdf-landscape.pdf-dark .pdf-viewer-toolbar { background: #1d2326; border-bottom-color: #2f383c; }
+.pdf-modal.pdf-landscape.pdf-dark .pdf-viewer-toolbar button {
+  background: #2a3236; border-color: #3b464b; color: #e8eee8;
+}
+.pdf-modal.pdf-landscape.pdf-dark .pdf-viewer-toolbar button:active { background: #374247; }
+.pdf-modal.pdf-landscape.pdf-dark .pdf-viewer-toolbar span { color: #b9c4b9; }
+.pdf-modal.pdf-landscape.pdf-dark .pdf-toolbar-sep { background: #3b464b; }
+.pdf-modal.pdf-landscape.pdf-dark .pdf-toolbar-rotate-on { background: #3b4a40 !important; }
+.pdf-modal.pdf-landscape.pdf-dark .pdf-canvas-scroll { background: #0d1011; }
+.pdf-modal.pdf-landscape.pdf-dark .pdf-canvas-scroll canvas {
+  /* Balik terang-gelap tapi tidak sampai hitam/putih pekat (nyaman di mata);
+     hue-rotate menjaga warna gambar/tabel agar tidak terbalik. */
+  filter: invert(0.9) hue-rotate(180deg);
+  box-shadow: none;
+  background: #fff;
+}
+.pdf-modal.pdf-landscape.pdf-dark .pdf-modal-foot { background: #14181a; border-top-color: #2f383c; }
+.pdf-modal.pdf-landscape.pdf-dark .pdf-modal-foot a { color: #9fb09f; }
+.pdf-modal.pdf-landscape.pdf-dark .pdf-loading { color: #b9c4b9; }
 @media (orientation: portrait) {
   .pdf-modal.pdf-landscape .pdf-modal-card {
     position: absolute;
@@ -1058,6 +1080,7 @@ table.nilai-table td.tm-td { padding: 4px 3px; }
       <button id="pdfZoomIn" type="button" aria-label="Perbesar">+</button>
       <span class="pdf-toolbar-sep"></span>
       <button id="pdfRotate" type="button" aria-label="Putar ke landscape" aria-pressed="false" title="Portrait / Landscape">↻</button>
+      <button id="pdfTheme" type="button" aria-label="Aktifkan mode gelap" aria-pressed="false" title="Mode baca gelap / terang">☾</button>
     </div>
     <div class="pdf-canvas-scroll" id="pdfCanvasScroll" style="display:none;">
       <canvas id="pdfCanvas"></canvas>
@@ -1895,6 +1918,19 @@ document.addEventListener("DOMContentLoaded", () => {
       requestAnimationFrame(() => renderPdfJsPage(pdfPageNum));
     }
   });
+  // Mode baca gelap/terang (hanya berlaku di landscape). Pilihan diingat.
+  const pdfThemeBtn = document.getElementById("pdfTheme");
+  function setPdfDark(on) {
+    pdfModal.classList.toggle("pdf-dark", on);
+    pdfThemeBtn.textContent = on ? "☀" : "☾";
+    pdfThemeBtn.setAttribute("aria-pressed", on ? "true" : "false");
+    pdfThemeBtn.setAttribute("aria-label", on ? "Aktifkan mode terang" : "Aktifkan mode gelap");
+    try { localStorage.setItem("pdfReadTheme", on ? "dark" : "light"); } catch (e) { /* abaikan */ }
+  }
+  pdfThemeBtn.addEventListener("click", () => {
+    setPdfDark(!pdfModal.classList.contains("pdf-dark"));
+  });
+  try { setPdfDark(localStorage.getItem("pdfReadTheme") === "dark"); } catch (e) { setPdfDark(false); }
   // Layar diputar / ukuran berubah -> render ulang supaya tetap tajam & pas.
   window.addEventListener("resize", debounce(() => {
     if (pdfDoc && pdfModal.classList.contains("show")) renderPdfJsPage(pdfPageNum);
