@@ -22,7 +22,6 @@
   --green-pale:   #EAF6E9;   /* hijau sangat muda, untuk latar lembut */
   --title-orange: #FE6801;   /* warna kata "Kelas" pada judul */
   --title-navy:   #002351;   /* warna kata "Pakree" pada judul */
-  --mapel-blue:   #1D4ED8;   /* warna nama mapel pada Jadwal Pelajaran */
   --gold:         #F2B705;   /* emas bintang & buku */
   --gold-deep:    #C98F00;
   --white:        #FFFFFF;
@@ -326,13 +325,17 @@ button { font-family: inherit; }
   font-variant-numeric: tabular-nums;
   font-size: 0.78rem;
 }
-.timeline-label { font-weight: 600; color: var(--mapel-blue); }
-.timeline-label.is-break { font-weight: 800; font-style: italic; }
+.timeline-label { font-weight: 700; text-decoration: underline; }
+/* Kegiatan rutin ini normal (tanpa bold, tanpa garis bawah): Apel Pagi,
+   Hafalan Juz Amma, Piket Kebersihan, Sholat Zuhur Berjama'ah */
+.timeline-label.is-regular { font-weight: 400; text-decoration: none; }
+/* Istirahat: miring saja, tanpa bold dan tanpa garis bawah */
+.timeline-label.is-break { font-weight: 400; font-style: italic; text-decoration: none; }
 
 .piket-names {
   font-size: 0.85rem;   /* sama dengan .timeline-item / .timeline-label */
-  font-weight: 600;
-  color: var(--ink);    /* warna teks utama, sama seperti label jadwal semula */
+  font-weight: 400;     /* sama dengan "Sholat Zuhur Berjama'ah" */
+  color: var(--ink);    /* warna teks utama, sama seperti label jadwal */
   margin: 0;
 }
 
@@ -371,13 +374,14 @@ button { font-family: inherit; }
   margin-bottom: 12px;
 }
 .back-btn {
-  border: none;
-  background: var(--green-pale);
-  color: var(--green-deep);
+  background: #A8D5A2;             /* hijau sedang-lembut, lebih ringan dari tab "Materi" */
+  color: var(--green-deep);        /* panah hijau tua, tebal & kontras */
+  border: 1px solid #7DBB77;
   width: 34px; height: 34px;
   border-radius: 50%;
-  font-size: 1rem;
+  box-shadow: 0 1px 4px rgba(20, 90, 50, 0.22);
   cursor: pointer;
+  padding: 0;
   display: flex; align-items: center; justify-content: center;
   flex: none;
 }
@@ -2171,6 +2175,22 @@ function render() {
 /* =========================================================================
    BERANDA
    ========================================================================= */
+// Nama kegiatan rutin yang tampil normal (tidak bold) di Jadwal Pelajaran.
+// Dibandingkan setelah apostrof ’ / ‘ disamakan menjadi ' dan huruf kecil.
+const JADWAL_TANPA_BOLD = [
+  "apel pagi - berdo'a bersama",
+  "hafalan juz amma",
+  "piket kebersihan",
+  "sholat zuhur berjama'ah",
+];
+function jadwalLabelClass(nama) {
+  const n = String(nama).trim().toLowerCase().replace(/[\u2018\u2019\u02BC`]/g, "'");
+  let cls = "timeline-label";
+  if (JADWAL_TANPA_BOLD.includes(n)) cls += " is-regular";
+  if (n === "istirahat") cls += " is-break";
+  return cls;
+}
+
 function renderBeranda() {
   const d = data();
   const jadwal = d.jadwalPelajaran.map(day => `
@@ -2179,7 +2199,7 @@ function renderBeranda() {
       ${day.jam.map(j => `
         <div class="timeline-item">
           <span class="timeline-time">${j.waktu}</span>
-          <span class="timeline-label${String(j.mapel).trim().toLowerCase() === "istirahat" ? " is-break" : ""}">${j.mapel}</span>
+          <span class="${jadwalLabelClass(j.mapel)}">${j.mapel}</span>
         </div>
       `).join("")}
     </div>
@@ -2453,7 +2473,9 @@ function renderMapelDetail() {
 
   return `
     <div class="back-row">
-      <button class="back-btn" id="backToMapel">←</button>
+      <button class="back-btn" id="backToMapel" aria-label="Kembali">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12H5"/><path d="M11.5 5.5L5 12l6.5 6.5"/></svg>
+      </button>
       <span class="subject-title">${m.icon} ${m.nama}</span>
     </div>
     <div class="tabs">
