@@ -587,16 +587,13 @@ button { font-family: inherit; }
   border: none;
   background: #fff;
 }
-.pdf-modal-foot {
+.pdf-modal-debug {
   flex-shrink: 0;
-  padding: 8px 14px;
+  margin: 0;
+  padding: 4px 12px;
+  font-size: 0.7rem;
+  color: #b00;
   text-align: center;
-  border-top: 1px solid var(--line);
-}
-.pdf-modal-foot a {
-  color: var(--ink-soft);
-  font-size: 0.78rem;
-  text-decoration: underline;
 }
 .pdf-modal-close {
   position: absolute;
@@ -633,7 +630,7 @@ button { font-family: inherit; }
   gap: 6px;
   padding: 8px 10px;
   background: var(--green-pale);
-  border-bottom: 1px solid var(--line);
+  border-top: 1px solid var(--line);   /* toolbar di bawah: terjangkau jempol */
   flex-shrink: 0;
 }
 .pdf-viewer-toolbar button {
@@ -697,14 +694,12 @@ button { font-family: inherit; }
     right: 8px;
     width: 32px; height: 32px;
   }
-  .pdf-viewer-toolbar { padding: 4px 8px; }
-  .pdf-viewer-toolbar button { width: 30px; height: 30px; }
-  .pdf-canvas-scroll canvas { margin: 6px auto; box-shadow: none; }
-  .pdf-modal-foot {
-    padding: 4px 10px;
+  .pdf-viewer-toolbar {
+    padding: 4px 8px;
     padding-bottom: calc(4px + env(safe-area-inset-bottom, 0px));
   }
-  .pdf-modal-foot a { font-size: 0.72rem; }
+  .pdf-viewer-toolbar button { width: 30px; height: 30px; }
+  .pdf-canvas-scroll canvas { margin: 6px auto; box-shadow: none; }
 }
 /* Mode landscape: kalau layar masih tegak (portrait), kartu diputar 90 derajat
    supaya halaman PDF terbaca melebar ke samping. Kalau HP sudah diputar
@@ -713,7 +708,7 @@ button { font-family: inherit; }
 /* Mode baca gelap-terang: hanya untuk mode landscape. */
 .pdf-modal:not(.pdf-landscape) #pdfTheme { display: none; }
 .pdf-modal.pdf-landscape.pdf-dark .pdf-modal-card { background: #000; }
-.pdf-modal.pdf-landscape.pdf-dark .pdf-viewer-toolbar { background: #0a0c0d; border-bottom-color: #232a2d; }
+.pdf-modal.pdf-landscape.pdf-dark .pdf-viewer-toolbar { background: #0a0c0d; border-top-color: #232a2d; }
 .pdf-modal.pdf-landscape.pdf-dark .pdf-viewer-toolbar button {
   background: #2a3236; border-color: #3b464b; color: #e8eee8;
 }
@@ -730,8 +725,6 @@ button { font-family: inherit; }
   box-shadow: none;
   background: #fff;
 }
-.pdf-modal.pdf-landscape.pdf-dark .pdf-modal-foot { background: #000; border-top-color: #232a2d; }
-.pdf-modal.pdf-landscape.pdf-dark .pdf-modal-foot a { color: #9fb09f; }
 .pdf-modal.pdf-landscape.pdf-dark .pdf-loading { color: #b9c4b9; }
 @media (orientation: portrait) {
   .pdf-modal.pdf-landscape .pdf-modal-card {
@@ -746,7 +739,7 @@ button { font-family: inherit; }
   }
   .pdf-modal.pdf-landscape .pdf-modal-header { padding: 8px 46px 8px 12px; }
   .pdf-modal.pdf-landscape .pdf-modal-close { top: 5px; right: 8px; }
-  .pdf-modal.pdf-landscape .pdf-modal-foot { padding: 4px 10px; }
+  .pdf-modal.pdf-landscape .pdf-viewer-toolbar { padding: 4px 8px; }
 }
 
 /* Kuis / Tugas list */
@@ -1080,6 +1073,11 @@ table.nilai-table td.tm-td { padding: 4px 3px; }
     <div class="pdf-loading" id="pdfLoadingNote" style="display:none;">
       <span class="spinner"></span> Memuat PDF...
     </div>
+    <div class="pdf-canvas-scroll" id="pdfCanvasScroll" style="display:none;">
+      <canvas id="pdfCanvas"></canvas>
+    </div>
+    <iframe id="pdfModalFrame" src="" title="Pratinjau PDF" style="display:none;"></iframe>
+    <p id="pdfModalDebug" class="pdf-modal-debug" style="display:none;"></p>
     <div class="pdf-viewer-toolbar" id="pdfViewerToolbar" style="display:none;">
       <button id="pdfPrev" type="button" aria-label="Halaman sebelumnya">‹</button>
       <span id="pdfPageInfo">1 / 1</span>
@@ -1090,14 +1088,6 @@ table.nilai-table td.tm-td { padding: 4px 3px; }
       <span class="pdf-toolbar-sep"></span>
       <button id="pdfRotate" type="button" aria-label="Putar ke landscape" aria-pressed="false" title="Portrait / Landscape">↻</button>
       <button id="pdfTheme" type="button" aria-label="Aktifkan mode gelap" aria-pressed="false" title="Mode baca gelap / terang">☾</button>
-    </div>
-    <div class="pdf-canvas-scroll" id="pdfCanvasScroll" style="display:none;">
-      <canvas id="pdfCanvas"></canvas>
-    </div>
-    <iframe id="pdfModalFrame" src="" title="Pratinjau PDF" style="display:none;"></iframe>
-    <div class="pdf-modal-foot">
-      <a id="pdfModalOpenTab" href="#" target="_blank" rel="noopener">Tidak tampil? Buka di tab baru</a>
-      <p id="pdfModalDebug" style="margin:4px 0 0; font-size:0.7rem; color:#b00; display:none;"></p>
     </div>
   </div>
 </div>
@@ -1731,7 +1721,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const pdfModal = document.getElementById("pdfModal");
   const pdfFrame = document.getElementById("pdfModalFrame");
   const pdfTitle = document.getElementById("pdfModalTitle");
-  const pdfOpenTab = document.getElementById("pdfModalOpenTab");
   const pdfLoadingNote = document.getElementById("pdfLoadingNote");
   const pdfToolbar = document.getElementById("pdfViewerToolbar");
   const pdfCanvasScroll = document.getElementById("pdfCanvasScroll");
@@ -1804,7 +1793,9 @@ document.addEventListener("DOMContentLoaded", () => {
     pdfCanvasScroll.scrollLeft = 0;
   }
 
-  function renderPdfJsPage(num) {
+  // scrollTo: "top" (halaman maju / baru) atau "bottom" (halaman mundur);
+  // kosong = pertahankan posisi (zoom, putar layar).
+  function renderPdfJsPage(num, scrollTo) {
     const myToken = ++pdfRenderToken;
     // Batalkan render yang masih berjalan dari halaman/zoom sebelumnya,
     // supaya tidak menimpa kanvas yang sama (penyebab teks jadi rapat/dobel).
@@ -1847,6 +1838,13 @@ document.addEventListener("DOMContentLoaded", () => {
       pdfCanvas.height = Math.max(1, Math.round(baseH * renderScale));
       pdfCanvas.style.width = (cropW * fitScale) + "px";
       pdfCanvas.style.height = (baseH * fitScale) + "px";
+      if (scrollTo === "top") {
+        pdfCanvasScroll.scrollTop = 0;
+        pdfCanvasScroll.scrollLeft = 0;
+      } else if (scrollTo === "bottom") {
+        pdfCanvasScroll.scrollLeft = 0;
+        pdfCanvasScroll.scrollTop = pdfCanvasScroll.scrollHeight; // dijepit ke batas bawah
+      }
       pdfCtx.clearRect(0, 0, pdfCanvas.width, pdfCanvas.height);
       const task = page.render({ canvasContext: pdfCtx, viewport });
       pdfCurrentRenderTask = task;
@@ -1891,7 +1889,6 @@ document.addEventListener("DOMContentLoaded", () => {
       e.preventDefault();
       resetPdfViewerUI();
       pdfTitle.textContent = trigger.dataset.pdfTitle || "";
-      pdfOpenTab.href = trigger.dataset.pdfView || trigger.dataset.pdfSrc;
       pdfModal.classList.add("show");
       openPdfJsViewer(trigger.dataset.pdfDownload).catch((err) => {
         // PDF.js gagal (mis. koneksi/CORS) -> otomatis pakai Drive Penampil PDF
@@ -1909,10 +1906,10 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
   document.getElementById("pdfPrev").addEventListener("click", () => {
-    if (pdfDoc && pdfPageNum > 1) { pdfPageNum--; scrollPdfToTop(); renderPdfJsPage(pdfPageNum); }
+    if (pdfDoc && pdfPageNum > 1) { pdfPageNum--; renderPdfJsPage(pdfPageNum, "bottom"); }
   });
   document.getElementById("pdfNext").addEventListener("click", () => {
-    if (pdfDoc && pdfPageNum < pdfDoc.numPages) { pdfPageNum++; scrollPdfToTop(); renderPdfJsPage(pdfPageNum); }
+    if (pdfDoc && pdfPageNum < pdfDoc.numPages) { pdfPageNum++; renderPdfJsPage(pdfPageNum, "top"); }
   });
   document.getElementById("pdfZoomIn").addEventListener("click", () => {
     if (pdfDoc) { pdfZoom = Math.min(pdfZoom + 0.25, 3); renderPdfJsPage(pdfPageNum); }
