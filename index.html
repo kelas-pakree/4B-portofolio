@@ -587,6 +587,71 @@ button { font-family: inherit; }
   border: none;
   background: #fff;
 }
+/* Penampil media (YouTube, Google Form, gambar/infografis) */
+.res-video-thumb {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  padding: 0;
+  border: 0;
+  background: #000;
+  border-radius: var(--radius-s);
+  overflow: hidden;
+  margin: 6px 0 4px;
+  cursor: pointer;
+}
+.res-video-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; opacity: 0.92; }
+.res-play {
+  position: absolute; inset: 0; margin: auto;
+  width: 54px; height: 54px; border-radius: 50%;
+  background: rgba(0,0,0,0.62); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.3rem; padding-left: 4px;
+}
+.res-zoomable { cursor: zoom-in; }
+.media-loading {
+  display: none;
+  align-items: center; justify-content: center; gap: 8px;
+  padding: 14px; color: var(--ink-soft); font-size: 0.85rem;
+}
+.media-stage {
+  flex: 1; min-height: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: #fff;
+}
+.media-modal.is-video .media-stage { background: #000; }
+.media-modal .media-frame { flex: none; width: 100%; height: 100%; border: 0; background: #fff; }
+.media-modal.is-video .media-frame {
+  height: auto;
+  aspect-ratio: 16 / 9;
+  width: min(100%, calc((100vh - 56px) * 16 / 9));
+  width: min(100%, calc((100dvh - 56px) * 16 / 9));
+}
+.media-image-scroll {
+  flex: 1; min-height: 0;
+  overflow: auto;
+  background: #eef2ee;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x pan-y pinch-zoom;
+}
+.media-image-scroll img { display: block; width: 100%; height: auto; max-width: none; margin: 0 auto; background: #fff; }
+.media-modal .media-image-scroll,
+.media-modal #mediaImgToolbar,
+.media-modal .media-foot { display: none; }
+.media-modal.is-image .media-image-scroll { display: block; }
+.media-modal.is-image #mediaImgToolbar { display: flex; }
+.media-modal.is-image .media-stage { display: none; }
+.media-modal.is-form .media-foot { display: block; }
+.media-foot {
+  flex-shrink: 0;
+  text-align: center;
+  padding: 6px 10px;
+  padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--line);
+  font-size: 0.78rem;
+}
+.media-foot a { color: var(--ink-soft); text-decoration: underline; }
 .pdf-modal-debug {
   flex-shrink: 0;
   margin: 0;
@@ -1092,6 +1157,30 @@ table.nilai-table td.tm-td { padding: 4px 3px; }
   </div>
 </div>
 
+<div class="pdf-modal media-modal" id="mediaModal">
+  <div class="pdf-modal-card">
+    <div class="pdf-modal-header">
+      <p id="mediaModalTitle"></p>
+      <button class="pdf-modal-close" id="mediaModalClose" aria-label="Tutup">✕</button>
+    </div>
+    <div class="media-loading" id="mediaLoading"><span class="spinner"></span> Memuat...</div>
+    <div class="media-stage" id="mediaStage">
+      <iframe class="media-frame" id="mediaFrame" title="Penampil" src="about:blank"
+        allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe>
+    </div>
+    <div class="media-image-scroll" id="mediaImageScroll"><img id="mediaImage" alt=""></div>
+    <p id="mediaDebug" class="pdf-modal-debug" style="display:none;"></p>
+    <div class="pdf-viewer-toolbar" id="mediaImgToolbar">
+      <button id="mediaZoomOut" type="button" aria-label="Perkecil">−</button>
+      <span id="mediaZoomInfo">100%</span>
+      <button id="mediaZoomIn" type="button" aria-label="Perbesar">+</button>
+    </div>
+    <div class="media-foot" id="mediaFoot">
+      <a id="mediaOpenTab" href="#" target="_blank" rel="noopener">Formulir tidak tampil? Buka di tab baru</a>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
 <script>
   if (window.pdfjsLib) {
@@ -1245,6 +1334,15 @@ const DATA_PER_TAHUN = {
               items: [
                 { type: "pdf", judul: "Materi ASTS Gasal 2026-2027.pdf", url: "https://drive.google.com/file/d/1FGCYiI57Zax8V3qPb_8c6rUupmAyyzF-/view?usp=sharing" },
                 { type: "pdf", judul: "Prediksi Soal ASTS Gasal 2026-2027.pdf", url: "https://drive.google.com/file/d/1KoYOpZPGz_L6g8LXDt4K19LXcFmn2-mA/view?usp=sharing" },
+              ],
+            },
+            {
+              bab: "Asesmen Akhir Semester",
+              items: [
+                { type: "pdf", judul: "B. INDO Materi Belajar ASAS Gasal.pdf", url: "https://drive.google.com/file/d/1Rwhx9vh4FocW5BcY-fgC5gkBZX_4yoMw/view?usp=sharing" },
+                { type: "pdf", judul: "B. INDO Tray out 1 Soal ASAS Gasal.pdf", url: "https://drive.google.com/file/d/1u26mg0vh_aDXYiKucSg5X5pqxl9BDEDH/view?usp=sharing" },
+                { type: "pdf", judul: "B. INDO Tray out 2 Soal ASAS Gasal.pdf", url: "https://drive.google.com/file/d/1u65Zal_Ar1OdAppkphh3VNjQLfCnGXC4/view?usp=sharing" },
+                { type: "pdf", judul: "B. INDO Tray out 3 Soal ASAS Gasal.pdf", url: "https://drive.google.com/file/d/1zNqHGOefaIVnRrYKUlTKEE8zvrWSUeCP/view?usp=sharing" },
               ],
             },
           ],
@@ -1962,6 +2060,87 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
+/* Penampil media: video YouTube, Google Form, dan gambar/infografis */
+document.addEventListener("DOMContentLoaded", () => {
+  const modal = document.getElementById("mediaModal");
+  const titleEl = document.getElementById("mediaModalTitle");
+  const frame = document.getElementById("mediaFrame");
+  const loading = document.getElementById("mediaLoading");
+  const imgScroll = document.getElementById("mediaImageScroll");
+  const img = document.getElementById("mediaImage");
+  const zoomInfo = document.getElementById("mediaZoomInfo");
+  const openTab = document.getElementById("mediaOpenTab");
+  const dbg = document.getElementById("mediaDebug");
+  const BLANK = "about:blank";
+  let zoom = 1;
+
+  function applyZoom() {
+    img.style.width = (zoom * 100) + "%";
+    zoomInfo.textContent = Math.round(zoom * 100) + "%";
+  }
+  function resetMedia() {
+    modal.classList.remove("is-video", "is-form", "is-image");
+    frame.src = BLANK;
+    img.removeAttribute("src");
+    loading.style.display = "none";
+    dbg.style.display = "none";
+    dbg.textContent = "";
+    zoom = 1;
+    applyZoom();
+  }
+  function closeMedia() {
+    modal.classList.remove("show");
+    resetMedia();
+  }
+  function openMedia(d) {
+    resetMedia();
+    titleEl.textContent = d.title || "";
+    modal.classList.add("show");
+    if (d.type === "image") {
+      modal.classList.add("is-image");
+      imgScroll.scrollTop = 0;
+      imgScroll.scrollLeft = 0;
+      loading.style.display = "flex";
+      img.onload = () => { loading.style.display = "none"; };
+      img.onerror = () => {
+        loading.style.display = "none";
+        dbg.textContent = "Gambar gagal dimuat. Jika dari Google Drive, pastikan file dibagikan ke \"Siapa saja yang memiliki link\".";
+        dbg.style.display = "block";
+      };
+      img.alt = d.title || "";
+      img.src = d.src;
+    } else {
+      modal.classList.add(d.type === "form" ? "is-form" : "is-video");
+      if (d.type === "form") openTab.href = d.view || d.src;
+      loading.style.display = "flex";
+      frame.onload = () => {
+        if (frame.getAttribute("src") !== BLANK) loading.style.display = "none";
+      };
+      frame.src = d.src;
+    }
+  }
+
+  document.addEventListener("click", (e) => {
+    const t = e.target.closest("[data-media-open]");
+    if (!t) return;
+    e.preventDefault();
+    openMedia({
+      type: t.dataset.mediaType,
+      src: t.dataset.mediaSrc,
+      title: t.dataset.mediaTitle,
+      view: t.dataset.mediaView,
+    });
+  });
+  document.getElementById("mediaZoomIn").addEventListener("click", () => {
+    zoom = Math.min(4, zoom + 0.5); applyZoom();
+  });
+  document.getElementById("mediaZoomOut").addEventListener("click", () => {
+    zoom = Math.max(1, zoom - 0.5); applyZoom();
+  });
+  document.getElementById("mediaModalClose").addEventListener("click", closeMedia);
+  modal.addEventListener("click", (e) => { if (e.target === modal) closeMedia(); });
+});
+
 function debounce(fn, wait) {
   let t;
   return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), wait); };
@@ -2270,7 +2449,7 @@ function tabsForMapel(m) {
 }
 
 function resIcon(type) {
-  return { pdf: "📄", image: "🖼️", youtube: "▶️", link: "🔗", audio: "🎧" }[type] || "📎";
+  return { pdf: "📄", image: "🖼️", youtube: "▶️", form: "📝", link: "🔗", audio: "🎧" }[type] || "📎";
 }
 
 // API Key Google Drive (dibatasi hanya untuk Google Drive API) -- dipakai
@@ -2299,30 +2478,94 @@ function driveApiMediaUrl(url) {
   return id ? `https://www.googleapis.com/drive/v3/files/${id}?alt=media&key=${GOOGLE_DRIVE_API_KEY}` : null;
 }
 
+function escAttr(v) {
+  return String(v == null ? "" : v).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+function youtubeId(url) {
+  const m = String(url || "").match(/(?:youtu\.be\/|youtube(?:-nocookie)?\.com\/(?:watch\?(?:[^#]*&)?v=|embed\/|shorts\/|live\/|v\/))([A-Za-z0-9_-]{11})/);
+  return m ? m[1] : null;
+}
+function youtubeEmbedUrl(url) {
+  const id = youtubeId(url);
+  return id ? `https://www.youtube-nocookie.com/embed/${id}?rel=0&playsinline=1&modestbranding=1` : url;
+}
+function youtubeThumbUrl(url) {
+  const id = youtubeId(url);
+  return id ? `https://i.ytimg.com/vi/${id}/hqdefault.jpg` : "";
+}
+function isGoogleFormUrl(url) {
+  return /^https?:\/\/docs\.google\.com\/forms\//i.test(String(url || "").trim());
+}
+function googleFormEmbedUrl(url) {
+  const u = String(url).trim();
+  if (/[?&]embedded=true/.test(u)) return u;
+  return u + (u.includes("?") ? "&" : "?") + "embedded=true";
+}
+function isDriveUrl(url) {
+  return /^https?:\/\/(drive|docs)\.google\.com\//i.test(String(url || "").trim());
+}
+// Gambar dari Google Drive -> alamat gambar langsung (file harus dibagikan "Siapa saja yang memiliki link")
+function imageSrcUrl(url) {
+  const id = isDriveUrl(url) ? driveFileId(url) : null;
+  return id ? `https://drive.google.com/thumbnail?id=${id}&sz=w2400` : url;
+}
+function imageDownloadUrl(url) {
+  return isDriveUrl(url) && driveFileId(url) ? driveDownloadUrl(url) : url;
+}
+function mediaAttrs(type, src, title, view) {
+  return `data-media-open data-media-type="${type}" data-media-src="${escAttr(src)}" data-media-title="${escAttr(title)}" data-media-view="${escAttr(view || src)}"`;
+}
+// Google Form -> dibuka di dalam aplikasi; tautan lain (mis. forms.gle) -> tab baru
+function formLinkHtml(url, cls, label, title) {
+  if (isGoogleFormUrl(url)) {
+    return `<a class="${cls}" href="${escAttr(url)}" ${mediaAttrs("form", googleFormEmbedUrl(url), title, url)}>${label}</a>`;
+  }
+  return `<a class="${cls}" href="${escAttr(url)}" target="_blank" rel="noopener">${label}</a>`;
+}
+
 function renderResourceItem(item) {
   if (item.type === "image") {
+    const src = imageSrcUrl(item.url);
+    const attrs = mediaAttrs("image", src, item.judul, item.url);
     return `
       <div class="res-item" style="flex-direction:column; align-items:stretch;">
         <div style="display:flex; align-items:center; gap:10px;">
           <span class="res-icon">${resIcon(item.type)}</span>
           <span class="res-title">${item.judul}</span>
         </div>
-        <img class="res-thumb" src="${item.url}" alt="${item.judul}" loading="lazy">
+        <img class="res-thumb res-zoomable" src="${escAttr(src)}" alt="${escAttr(item.judul)}" loading="lazy" ${attrs}>
         <div style="display:flex; gap:8px;">
-          <a class="res-action" href="${item.url}" target="_blank" rel="noopener">Lihat</a>
-          <a class="res-action" href="${item.url}" download target="_blank" rel="noopener">Unduh</a>
+          <a class="res-action" href="${escAttr(item.url)}" ${attrs}>Lihat</a>
+          <a class="res-action" href="${escAttr(imageDownloadUrl(item.url))}" download target="_blank" rel="noopener">Unduh</a>
         </div>
       </div>
     `;
   }
   if (item.type === "youtube") {
+    const embed = youtubeEmbedUrl(item.url);
+    const attrs = mediaAttrs("video", embed, item.judul, item.url);
+    const thumb = youtubeThumbUrl(item.url);
     return `
       <div class="res-item" style="flex-direction:column; align-items:stretch;">
         <div style="display:flex; align-items:center; gap:10px;">
           <span class="res-icon">${resIcon(item.type)}</span>
           <span class="res-title">${item.judul}</span>
         </div>
-        <iframe class="res-video" src="${item.url}" title="${item.judul}" allowfullscreen loading="lazy"></iframe>
+        ${thumb ? `
+        <button type="button" class="res-video-thumb" aria-label="Putar ${escAttr(item.judul)}" ${attrs}>
+          <img src="${escAttr(thumb)}" alt="" loading="lazy">
+          <span class="res-play">▶</span>
+        </button>` : `
+        <div style="display:flex; gap:8px; margin-top:6px;"><a class="res-action" href="${escAttr(item.url)}" ${attrs}>Putar</a></div>`}
+      </div>
+    `;
+  }
+  if (item.type === "form") {
+    return `
+      <div class="res-item">
+        <span class="res-icon">${resIcon(item.type)}</span>
+        <span class="res-title">${item.judul}</span>
+        ${formLinkHtml(item.url, "res-action", "Buka", item.judul)}
       </div>
     `;
   }
@@ -2434,7 +2677,7 @@ function renderKuisList(list) {
     <div class="list-item">
       <h4>${k.judul}</h4>
       <p>${k.deskripsi}</p>
-      <a class="btn-primary" href="${k.url}" target="_blank" rel="noopener">Kerjakan Kuis</a>
+      ${formLinkHtml(k.url, "btn-primary", "Kerjakan Kuis", k.judul)}
     </div>
   `).join("");
 }
@@ -2450,7 +2693,7 @@ function renderTugasList(list) {
       <span class="deadline-chip">Batas: ${formatTanggal(t.deadline)}</span>
       <h4>${t.judul}</h4>
       <p>${t.deskripsi}</p>
-      ${t.url ? `<a class="btn-primary" href="${t.url}" target="_blank" rel="noopener">Buka Tugas</a>` : ""}
+      ${t.url ? formLinkHtml(t.url, "btn-primary", "Buka Tugas", t.judul) : ""}
     </div>
   `).join("");
 }
